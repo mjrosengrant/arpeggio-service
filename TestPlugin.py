@@ -1,6 +1,8 @@
 import nanome
 from nanome.util.enums import NotificationTypes
-from nanome.util import async_callback, Logs
+from nanome.util import async_callback
+from nanome.api.structure import Complex, Workspace
+
 
 NAME = "Chem Tests"
 DESCRIPTION = "Tests ChemInteractions Plugin."
@@ -14,8 +16,6 @@ class ChemInteractionsTestPlugin(nanome.AsyncPluginInstance):
     @async_callback
     async def start(self):
         # Load Test Molecule into Workspace.
-        message = 'hihihihi'
-        print(message)
         response = await self.setup_workspace()
         if not response:
             self.send_notification(NotificationTypes.error, 'response is None')
@@ -23,11 +23,16 @@ class ChemInteractionsTestPlugin(nanome.AsyncPluginInstance):
             self.send_notification(NotificationTypes.success, 'Test Pass')
 
     async def setup_workspace(self):
-        filepath = '1tyl.nanome'
-        with open(filepath, 'rb') as f:
-            workspace_data = f.read()
-            workspace = await self.update_workspace(workspace_data)
-            print(workspace)
+        filepath = '1tyl.pdb'
+        comp = None
+        with open(filepath, 'r') as f:
+            comp = Complex.io.from_pdb(file=f)
+
+        workspace = Workspace()
+        workspace.add_complex(comp)
+        workspace = await self.update_workspace(workspace)
+        print(workspace)
+        return workspace
 
     # @async_callback
     # async def on_run(self):
