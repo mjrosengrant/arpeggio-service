@@ -15,6 +15,14 @@
             "program": "${workspaceFolder}/chem_interactions/run.py",
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/.env",
+        },
+        {
+            "name": "TestPlugin.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/TestPlugin.py",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env.dev",
         }
     ]
 }
