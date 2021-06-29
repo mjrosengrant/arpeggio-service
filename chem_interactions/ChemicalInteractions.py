@@ -21,7 +21,7 @@ PDBOPTIONS.write_bonds = True
 
 class ChemicalInteractions(nanome.AsyncPluginInstance):
 
-    def start(self):
+    def __init__(self):
         self.residue = ''
         self.interactions_url = environ.get('INTERACTIONS_URL')
         self.menu = ChemInteractionsMenu(self)
