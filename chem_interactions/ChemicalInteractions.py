@@ -19,7 +19,7 @@ PDBOPTIONS = Complex.io.PDBSaveOptions()
 PDBOPTIONS.write_bonds = True
 
 
-class ChemicalInteractions(nanome.AsyncPluginInstance):
+class ChemicalInteractionsPlugin(nanome.AsyncPluginInstance):
 
     def __init__(self):
         self.residue = ''
