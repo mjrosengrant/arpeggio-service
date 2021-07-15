@@ -183,12 +183,19 @@ class ChemInteractionsMenu():
     async def clear_frame(self, btn):
         """Clear all interactions that are currently visible."""
         # Figure out the complexes currently in selection, and clear all lines connected to them.
+        complexes_in_frame = []
         selected_complexes = [
             item.complex
             for item in self.dd_complexes.items
             if item.selected
         ]
-        self.plugin.clear_visible_lines(selected_complexes)
+        complexes_in_frame.extend(selected_complexes)
+        ligand_ddis = [item for item in self.dd_ligands.items if item.selected]
+        for ligand_ddi in ligand_ddis:
+            residue_complex = getattr(ligand_ddi, 'complex', None)
+            if residue_complex:
+                complexes_in_frame.append(residue_complex)
+        self.plugin.clear_visible_lines(complexes_in_frame)
 
     def collect_interaction_data(self):
         """Collect Interaction data from various content widgets."""
@@ -236,7 +243,6 @@ class ChemInteractionsMenu():
             selected_atoms_only = True
 
         selected_complex = selected_complexes[0]
-        ligand_ddis = [item for item in self.dd_ligands.items if item.selected]
 
         # Determine selection type (Show all interactions or only selected atoms)
         selected_atoms_only = False
@@ -245,6 +251,8 @@ class ChemInteractionsMenu():
 
         residues = []
         residue_complexes = []
+        
+        ligand_ddis = [item for item in self.dd_ligands.items if item.selected]
         if ligand_ddis:
             for ligand_ddi in ligand_ddis:
                 selected_ligand = getattr(ligand_ddi, 'ligand', None)
