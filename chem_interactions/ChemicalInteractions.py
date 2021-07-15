@@ -7,9 +7,8 @@ from os import environ, path
 import nanome
 from nanome.api.structure import Complex
 from nanome.api.shapes import Shape
-from nanome.util.enums import NotificationTypes
+from nanome.util.enums import NotificationTypes, StreamType
 from nanome.util import async_callback, Color, Logs
-
 from forms import InteractionsForm, LineForm
 from menus import ChemInteractionsMenu
 from utils import ComplexUtils
@@ -340,7 +339,22 @@ class ChemicalInteractions(nanome.AsyncPluginInstance):
 
         Logs.message(f'adding {len(new_lines)} new lines')
         Shape.upload_multiple(new_lines)
+        complex_indices = []
+        stream_type = StreamType.shape_position.value
         self.interaction_lines.extend(new_lines)
+        self.stream = await self.create_reading_stream([l.index for l in new_lines], stream_type)
+
+    def on_stream_created(self, stream, error):
+        print('huh?')
+        stream.set_update_received_callback(self.update_received)
+        ...
+
+    def update_received(self, data):
+        Logs.debug("Position:", data[0], data[1], data[2])
+        Logs.debug("Rotation:", data[3], data[4], data[5], data[6])
+
+    def destroy_long_lines(self):
+        print('who?')
 
     async def create_new_lines(self, atom1, atom2, interaction_types, line_settings):
         """Parse rows of data from .contacts file into Line objects.
