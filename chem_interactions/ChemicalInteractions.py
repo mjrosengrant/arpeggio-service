@@ -1,4 +1,5 @@
 import asyncio
+from nanome.api.streams.stream import Stream
 import requests
 import tempfile
 import time
@@ -340,10 +341,18 @@ class ChemicalInteractions(nanome.AsyncPluginInstance):
         Logs.message(f'adding {len(new_lines)} new lines')
         await Shape.upload_multiple(new_lines)
         self.interaction_lines.extend(new_lines)
-        stream_type = StreamType.complex_position_rotation
-        comp_indices = [c.index for c in complexes]
-        self.stream = await self.create_reading_stream(comp_indices, stream_type)[0]
-        print('wooo')
+        stream_type = StreamType.position
+        comp_indices = [a.index for a in complexes[0].atoms]
+
+        for streamtype in StreamType:
+            try:
+                if streamtype.value == 5:
+                    print('hol\' up')
+                self.stream = (await self.create_reading_stream(comp_indices, streamtype.value))[0]
+            except Exception as e:
+                print('oops')
+            if self.stream:
+                print('wooo')
 
     def on_stream_created(self, stream, error):
         print('huh?')
