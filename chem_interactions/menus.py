@@ -182,7 +182,13 @@ class ChemInteractionsMenu():
     @async_callback
     async def clear_frame(self, btn):
         """Clear all interactions that are currently visible."""
-        self.plugin.clear_visible_lines(self.complexes)
+        # Figure out the complexes currently in selection, and clear all lines connected to them.
+        selected_complexes = [
+            item.complex
+            for item in self.dd_complexes.items
+            if item.selected
+        ]
+        self.plugin.clear_visible_lines(selected_complexes)
 
     def collect_interaction_data(self):
         """Collect Interaction data from various content widgets."""
