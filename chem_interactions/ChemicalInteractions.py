@@ -340,9 +340,9 @@ class ChemicalInteractions(nanome.AsyncPluginInstance):
         Logs.message(f'adding {len(new_lines)} new lines')
         await Shape.upload_multiple(new_lines)
         self.interaction_lines.extend(new_lines)
-        stream_type = StreamType.shape_position.value
-        line_indices = [l.index for l in self.interaction_lines]
-        self.stream = await self.create_reading_stream(line_indices, stream_type)
+        stream_type = StreamType.complex_position_rotation
+        comp_indices = [c.index for c in complexes]
+        self.stream = await self.create_reading_stream(comp_indices, stream_type)[0]
         print('wooo')
 
     def on_stream_created(self, stream, error):
