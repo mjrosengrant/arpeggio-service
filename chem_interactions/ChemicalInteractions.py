@@ -339,10 +339,10 @@ class ChemicalInteractions(nanome.AsyncPluginInstance):
 
         Logs.message(f'adding {len(new_lines)} new lines')
         Shape.upload_multiple(new_lines)
-        complex_indices = []
-        stream_type = StreamType.shape_position.value
         self.interaction_lines.extend(new_lines)
-        self.stream = await self.create_reading_stream([l.index for l in new_lines], stream_type)
+        stream_type = StreamType.shape_position.value
+        line_indices = [l.index for l in self.interaction_lines]
+        self.stream = await self.create_reading_stream(line_indices, stream_type)
 
     def on_stream_created(self, stream, error):
         print('huh?')
@@ -480,6 +480,7 @@ class ChemicalInteractions(nanome.AsyncPluginInstance):
         """Clear all interaction lines that are currently visible."""
         line_count = len(self.interaction_lines)
         lines_to_destroy = []
+
         for i in range(line_count - 1, -1, -1):
             line = self.interaction_lines[i]
             if self.line_in_frame(line, complexes):
