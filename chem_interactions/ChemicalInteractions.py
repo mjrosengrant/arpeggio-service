@@ -338,11 +338,12 @@ class ChemicalInteractions(nanome.AsyncPluginInstance):
             new_lines.extend(await self.create_new_lines(atom1, atom2, interaction_types, form.data))
 
         Logs.message(f'adding {len(new_lines)} new lines')
-        Shape.upload_multiple(new_lines)
+        await Shape.upload_multiple(new_lines)
         self.interaction_lines.extend(new_lines)
         stream_type = StreamType.shape_position.value
         line_indices = [l.index for l in self.interaction_lines]
         self.stream = await self.create_reading_stream(line_indices, stream_type)
+        print('wooo')
 
     def on_stream_created(self, stream, error):
         print('huh?')
