@@ -2,14 +2,17 @@ import asyncio
 import os
 import tempfile
 import unittest
+import pytest
 
 import nanome
+# from nanome._internal._plugin import _Plugin
+# from nanome._internal._process import _ProcessManager, _LogsManager
+from nanome.api import Plugin, plugin
 from nanome.api.structure import Complex, Workspace
-from nanome.util.enums import NotificationTypes
 from nanome.util import async_callback
-
+from nanome.util.enums import NotificationTypes
 from chem_interactions.ChemicalInteractions import ChemicalInteractionsPlugin
-from chem_interactions.forms import line_settings
+from chem_interactions.forms import default_line_settings
 from chem_interactions.utils import extract_ligands
 
 
@@ -22,37 +25,55 @@ HAS_ADVANCED_OPTIONS = False
 class ChemInteractionsTestCase(unittest.TestCase):
     """Integration Tests for the Chemical Interactions Plugin."""
 
-    def __init__(self, testName, plugin=None):
-        super().__init__(testName)
-        self.plugin = plugin
+    plugin_class = ChemicalInteractionsPlugin
 
-    def setUp(self):
-        self.loop = asyncio.get_event_loop()
+    def __init__(self, plugin_instance):
+        super().__init__()
+        self.plugin_instance = plugin_instance
 
-    def tearDown(self):
-        self.loop.create_task(self.clear_workspace())
+    @classmethod
+    def  setUpClass(cls):
+        # cls.loop = asyncio.get_event_loop()
+        # cls.plugin_instance = cls.plugin_class()
+        cls.loop = asyncio.get_event_loop()
+
+        # Instantiate plugin to get Network connection, and add to plugin instance
+        name = "ChemInterIntegrationTests"
+        description = 'Integration Tests'
+        plugin = Plugin(name, description, [], False, [], [])
+        plugin.set_plugin_class(cls.plugin_class)
+        host = os.environ['NTS_HOST']
+        port = os.environ['NTS_PORT']
+        plugin.__host = host
+        plugin.__port = port
+        plugin.__run()
+        # plugin._process_manager = _ProcessManager()
+        # plugin._logs_manager = _LogsManager(cls.plugin_class.__name__ + ".log")
+        # plugin.__connect()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.loop.create_task(cls.clear_workspace())
+        pass
 
     def test_tests_being_loaded(self):
         self.assertEqual(1, 1)
 
-    def test_calculate_interactions_1tyl(self):
+    async def test_calculate_interactions_1tyl(self, plugin_instance):
         # Collect data to populate calculate_interactions method.
-        self.loop.run_until_complete(self.calculate_interactions_1tyl(self.plugin))
-
-    async def calculate_interactions_1tyl(self, plugin):
         await self.setup_1tyl_workspace()
-        complex_list = await self.plugin.request_complex_list()
-        comp = (await self.plugin.request_complexes([complex_list[0].index]))[0]
+        complex_list = await self.plugin_instance.request_complex_list()
+        comp = (await self.plugin_instance.request_complexes([complex_list[0].index]))[0]
         ligand = None
         tmp = tempfile.NamedTemporaryFile()
         comp.io.to_pdb(path=tmp.name)
         ligand = extract_ligands(tmp)[0]
 
-        interaction_data = line_settings
-        await self.plugin.calculate_interactions(comp, comp, interaction_data, ligand)
+        interaction_data = default_line_settings
+        await self.plugin_instance.calculate_interactions(comp, comp, interaction_data, ligand)
 
         expected_line_count = 28
-        line_count = len(self.plugin._interaction_lines)
+        line_count = len(self.plugin_instance._interaction_lines)
         try:
             assert line_count == expected_line_count
         except AssertionError:
@@ -65,33 +86,35 @@ class ChemInteractionsTestCase(unittest.TestCase):
         comp = Complex.io.from_pdb(path=filepath)
         workspace = Workspace()
         workspace.add_complex(comp)
-        self.plugin.update_workspace(workspace)
+        await self.plugin_instance.update_workspace(workspace)
 
-    async def clear_workspace(self):
+    @classmethod
+    async def clear_workspace(cls):
         workspace = Workspace()
-        self.plugin.update_workspace(workspace)
+        cls.plugin.update_workspace(workspace)
 
 
 class IntegrationTestPlugin(nanome.AsyncPluginInstance):
     """Run TestCases for ChemicalInteractionsPlugin."""
 
-    plugin_class = ChemicalInteractionsPlugin
+    testcase_class = ChemInteractionsTestCase
 
     @async_callback
     async def on_run(self):
-        # Create new plugin instance, and connect it to ChemInteractions PluginInstance
-        os.environ["INTERACTIONS_URL"] = 'http://127.0.0.1:8000'
-
-        plugin_instance = self.plugin_class()
+        plugin_instance = ChemicalInteractionsPlugin()
         plugin_instance._network = self._network
 
-        suite = unittest.TestSuite()
-        suite.addTest(ChemInteractionsTestCase('test_calculate_interactions_1tyl', plugin_instance))
-        unittest.TextTestRunner(verbosity=2).run(suite)
+        testcase = self.testcase_class(plugin_instance)
+        # testcase.run()
+
+        # suite = unittest.TestSuite()
+        # suite.addTest(ChemInteractionsTestCase('test_calculate_interactions_1tyl', plugin_instance))
+        # unittest.TextTestRunner(verbosity=2).run(suite)
         # add tests to the test suite
         # suite.addTest(ChemInteractionsTestCase(plugin_instance))
         # runner = unittest.TextTestRunner(verbosity=3)
         # runner.run(suite)
 
 
-nanome.Plugin.setup(NAME, DESCRIPTION, CATEGORY, False, IntegrationTestPlugin)
+if __name__ == "__main__":
+    nanome.Plugin.setup(NAME, DESCRIPTION, CATEGORY, False, IntegrationTestPlugin)

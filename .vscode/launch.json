@@ -23,6 +23,8 @@
             "program": "${workspaceFolder}/TestPlugin.py",
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/.env.dev",
+            "args": ["-r", "-v"],
+            "justMyCode": false
         }
     ]
 }
