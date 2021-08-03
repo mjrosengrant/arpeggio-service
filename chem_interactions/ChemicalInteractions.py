@@ -17,6 +17,7 @@ from utils import ComplexUtils
 
 PDBOPTIONS = Complex.io.PDBSaveOptions()
 PDBOPTIONS.write_bonds = True
+MMCIFOptions = Complex.io.MMCIFSaveOptions()
 
 
 class ChemicalInteractions(nanome.AsyncPluginInstance):
@@ -104,14 +105,20 @@ class ChemicalInteractions(nanome.AsyncPluginInstance):
             full_complex = selected_complex
 
         # Clean complex and return as tempfile
-        cleaned_file = self.clean_complex(full_complex)
-        cleaned_data = ''
-        with open(cleaned_file.name, 'r') as f:
-            cleaned_data = f.read()
+        # cleaned_file = self.clean_complex(full_complex)
+        # cleaned_data = ''
+        # with open(cleaned_file.name, 'r') as f:
+        #     cleaned_data = f.read()
 
         # Set up data for request to interactions service
-        filename = cleaned_file.name.split('/')[-1]
-        files = {filename: cleaned_data}
+
+        temp_file = tempfile.NamedTemporaryFile(suffix='.cif')
+        full_complex.io.to_mmcif(temp_file.name, MMCIFOptions)
+        with open(temp_file.name, 'r') as cif_stream:
+            cif_data = cif_stream.read()
+
+        filename = temp_file.name.split('/')[-1]
+        files = {filename: cif_data}
         data = {}
 
         selection = self.get_interaction_selections(selected_complex, ligand_complexes, ligands, selected_atoms_only)
