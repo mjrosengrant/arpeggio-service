@@ -2,14 +2,13 @@ import asyncio
 import os
 import tempfile
 import unittest
-import pytest
 
 import nanome
 # from nanome._internal._plugin import _Plugin
 # from nanome._internal._process import _ProcessManager, _LogsManager
-from nanome.api import Plugin, plugin
+from nanome.api import Plugin
 from nanome.api.structure import Complex, Workspace
-from nanome.util import async_callback
+from nanome.util import async_callback, Logs
 from nanome.util.enums import NotificationTypes
 from chem_interactions.ChemicalInteractions import ChemicalInteractionsPlugin
 from chem_interactions.forms import default_line_settings
@@ -32,7 +31,7 @@ class ChemInteractionsTestCase(unittest.TestCase):
         self.plugin_instance = plugin_instance
 
     @classmethod
-    def  setUpClass(cls):
+    def setUpClass(cls):
         # cls.loop = asyncio.get_event_loop()
         # cls.plugin_instance = cls.plugin_class()
         cls.loop = asyncio.get_event_loop()
@@ -59,35 +58,6 @@ class ChemInteractionsTestCase(unittest.TestCase):
     def test_tests_being_loaded(self):
         self.assertEqual(1, 1)
 
-    async def test_calculate_interactions_1tyl(self, plugin_instance):
-        # Collect data to populate calculate_interactions method.
-        await self.setup_1tyl_workspace()
-        complex_list = await self.plugin_instance.request_complex_list()
-        comp = (await self.plugin_instance.request_complexes([complex_list[0].index]))[0]
-        ligand = None
-        tmp = tempfile.NamedTemporaryFile()
-        comp.io.to_pdb(path=tmp.name)
-        ligand = extract_ligands(tmp)[0]
-
-        interaction_data = default_line_settings
-        await self.plugin_instance.calculate_interactions(comp, comp, interaction_data, ligand)
-
-        expected_line_count = 28
-        line_count = len(self.plugin_instance._interaction_lines)
-        try:
-            assert line_count == expected_line_count
-        except AssertionError:
-            self.send_notification(NotificationTypes.error, f"Assertion Failed, {line_count} != {expected_line_count}")
-        else:
-            self.send_notification(NotificationTypes.success, 'Tests Completed Successfully!')
-
-    async def setup_1tyl_workspace(self):
-        filepath = '1tyl.pdb'
-        comp = Complex.io.from_pdb(path=filepath)
-        workspace = Workspace()
-        workspace.add_complex(comp)
-        await self.plugin_instance.update_workspace(workspace)
-
     @classmethod
     async def clear_workspace(cls):
         workspace = Workspace()
@@ -101,20 +71,43 @@ class IntegrationTestPlugin(nanome.AsyncPluginInstance):
 
     @async_callback
     async def on_run(self):
-        plugin_instance = ChemicalInteractionsPlugin()
-        plugin_instance._network = self._network
+        self.plugin_instance = ChemicalInteractionsPlugin()
+        self.plugin_instance._network = self._network
+        await self.test_calculate_interactions_1tyl()
 
-        testcase = self.testcase_class(plugin_instance)
-        # testcase.run()
+    async def setup_1tyl_workspace(self):
+        filepath = '1tyl.pdb'
+        comp = Complex.io.from_pdb(path=filepath)
+        workspace = Workspace()
+        workspace.add_complex(comp)
+        self.plugin_instance.update_workspace(workspace)
 
-        # suite = unittest.TestSuite()
-        # suite.addTest(ChemInteractionsTestCase('test_calculate_interactions_1tyl', plugin_instance))
-        # unittest.TextTestRunner(verbosity=2).run(suite)
-        # add tests to the test suite
-        # suite.addTest(ChemInteractionsTestCase(plugin_instance))
-        # runner = unittest.TextTestRunner(verbosity=3)
-        # runner.run(suite)
+    async def test_calculate_interactions_1tyl(self):
+        # Collect data to populate calculate_interactions method.
+        await self.setup_1tyl_workspace()
+        complex_list = await self.plugin_instance.request_complex_list()
+        comp = (await self.plugin_instance.request_complexes([complex_list[0].index]))[0]
+        ligand = None
+        tmp = tempfile.NamedTemporaryFile()
+        comp.io.to_pdb(path=tmp.name)
+        ligand = extract_ligands(tmp)[0]
+        line_settings = default_line_settings
+        await self.plugin_instance.calculate_interactions(comp, [comp], line_settings, [ligand])
+
+        expected_line_count = 85
+        line_count = len(self.plugin_instance.line_manager.all_lines())
+        try:
+            assert line_count == expected_line_count
+        except AssertionError:
+            msg = f"Assertion Failed, {line_count} != {expected_line_count}"
+            self.send_notification(NotificationTypes.error, msg)
+            raise AssertionError(msg)
+        else:
+            msg = 'Tests Completed Successfully!'
+            Logs.message(msg)
+            self.send_notification(NotificationTypes.success, msg)
 
 
 if __name__ == "__main__":
+    os.environ['INTERACTIONS_URL'] = 'http://127.0.0.1:8000'
     nanome.Plugin.setup(NAME, DESCRIPTION, CATEGORY, False, IntegrationTestPlugin)

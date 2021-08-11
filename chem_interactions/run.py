@@ -1,7 +1,7 @@
 import argparse
 import os
 import nanome
-import ChemicalInteractions
+from ChemicalInteractions import ChemicalInteractionsPlugin
 from nanome.util.enums import Integrations
 
 
@@ -38,7 +38,7 @@ def main():
     plugin = nanome.Plugin(
         plugin_name, description, category, advanced_settings, integrations=integrations)
 
-    plugin.set_plugin_class(ChemicalInteractions.ChemicalInteractions)
+    plugin.set_plugin_class(ChemicalInteractionsPlugin)
 
     # CLI Args take priority over environment variables for NTS settnigs
     host = args.host or os.environ.get('NTS_HOST')
