@@ -1,11 +1,6 @@
 __pycache__
-/build
-/dist
-*.cachebust
 *.egg-info
-*.log
 *.env*
 *.pyc
-tmp
-docker-compose.override.yml
-docker/redeploy.sh
+*.pyo
+.DS_Store

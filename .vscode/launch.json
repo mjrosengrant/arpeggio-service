@@ -2,19 +2,21 @@
     "version": "2.0.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Python: Flask",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "run.py",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/chem_interactions/run.py",
-            "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/.env",
+            "module": "flask",
+            "env": {
+                "FLASK_APP": "arpeggio_service/app.py",
+                "FLASK_ENV": "development"
+            },
+            "args": [
+                "run",
+                "--debugger",
+                "--reload",
+                "-p", "8000"
+            ],
+            "jinja": true
         }
     ]
 }
